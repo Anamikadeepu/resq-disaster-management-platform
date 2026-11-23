@@ -53,29 +53,52 @@ export function distanceKm(lat1, lon1, lat2, lon2) {
 // Low level Overpass query runner
 // --------------------------------------------------------------
 
+// Give each mirror a hard deadline so a slow/overloaded free
+// instance fails fast (and lets us try the next mirror / show a
+// retryable error) instead of leaving the UI stuck on a spinner
+// forever.
+const OVERPASS_TIMEOUT_MS = 12000;
+
+async function fetchWithTimeout(endpoint, query, timeoutMs) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "data=" + encodeURIComponent(query),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Overpass request failed (${response.status})`);
+    }
+
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function runOverpassQuery(query) {
   let lastError = null;
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: "data=" + encodeURIComponent(query),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Overpass request failed (${response.status})`
-        );
-      }
-
-      const data = await response.json();
+      const data = await fetchWithTimeout(
+        endpoint,
+        query,
+        OVERPASS_TIMEOUT_MS
+      );
       return data.elements || [];
     } catch (error) {
-      lastError = error;
+      lastError =
+        error.name === "AbortError"
+          ? new Error(`Overpass mirror timed out after ${OVERPASS_TIMEOUT_MS / 1000}s`)
+          : error;
       // try the next mirror
     }
   }
