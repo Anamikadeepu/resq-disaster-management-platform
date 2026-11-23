@@ -1,0 +1,25 @@
+# Backend (Java/Maven)
+backend/target/
+*.class
+*.jar
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.local
+*.pem
+frontend/src/services/*.pdf 

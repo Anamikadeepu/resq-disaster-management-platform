@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: disaster-management-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dmp_db
+    username: dmp_user
+    password: dmp_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# --- External services (fill in real keys via env vars in production) ---
+external:
+  maps:
+    provider: google-maps   # or mapbox / openstreetmap
+    api-key: ${MAPS_API_KEY:}
+  weather:
+    provider: openweathermap
+    api-key: ${WEATHER_API_KEY:}
+  emergency:
+    provider: local-emergency-gateway
+    api-key: ${EMERGENCY_API_KEY:}
+
+ai:
+  rag:
+    llm-provider: anthropic   # or openai
+    api-key: ${LLM_API_KEY:}
+    vector-store: pgvector    # or pinecone / weaviate
